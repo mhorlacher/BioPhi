@@ -7,6 +7,8 @@ from tqdm import tqdm
 from multiprocessing import Pool
 from functools import partial
 
+from biophi import LOGGER
+
 
 @click.command()
 @click.argument("inputs", required=True, nargs=-1)
@@ -42,6 +44,13 @@ from functools import partial
     type=bool,
     help="Only export a single summary sheet in CSV format",
 )
+@click.option(
+    "--debug",
+    is_flag=True,
+    default=False,
+    type=bool,
+    help="Enable debugging logs",
+)
 def oasis(
     inputs,
     output,
@@ -51,6 +60,7 @@ def oasis(
     min_percent_subjects,
     summary,
     summary_to_csv,
+    debug,
 ):
     """OASis: Antibody humanness evaluation using 9-mer peptide search.
 
@@ -154,6 +164,9 @@ def oasis(
         sheets = HumannessTaskResult.to_sheets(results, full=not summary)
         write_sheets(sheets, output)
         click.echo(f"Saved XLSX report to: {output}", err=True)
+
+    if debug:
+        LOGGER.setLevel(LOGGER.DEBUG)
 
 
 def humanness_task_wrapper(antibody_input, **kwargs):

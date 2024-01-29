@@ -16,6 +16,11 @@ from biophi.humanization.methods.stats import (
     get_chain_type_residue_frequency,
 )
 
+import logging
+from biophi import LOGGER
+
+LOGGER.setLevel(logging.DEBUG)
+
 OASIS_MIN_SUBJECTS_THRESHOLDS = {
     "loose": 0.01,
     "relaxed": 0.1,
@@ -373,6 +378,7 @@ def get_chain_oasis_peptides(chain, params: OASisParams):
         f"SELECT COUNT(*) FROM subjects WHERE Complete{oas_filter_chain}Seqs >= 10000"
     )
     num_total_oas_subjects = int(result.fetchall()[0][0])
+    LOGGER.debug(f"Total OASis subjects: {num_total_oas_subjects}")
 
     oas_hits = get_oas_hits(
         [peptide for pos, peptide in pos_peptides],
@@ -453,12 +459,17 @@ def get_oas_hits(peptides: Union[str, List[str]], engine: Engine, filter_chain=N
     statement = (
         "SELECT peptides.* FROM peptides "
         "LEFT JOIN subjects ON peptides.subject=subjects.id "
-        "WHERE peptide IN ("
-        + ",".join("?" * len(peptides))
-        + ") AND subjects.StudyPath <> 'Corcoran_2016' "
+        "WHERE peptide IN (" + ",".join("?" * len(peptides)) + ")"
+        # TODO: The statement below us causing problems with the natAb SQLite database, i.e.
+        # for some reason including it results in no hits being found. Commenting it out for
+        # now, but it should be investigated.
+        # + "AND subjects.StudyPath <> 'Corcoran_2016' "
         + filter_chain_statement
     )
-    return pd.read_sql(statement, params=peptides, con=engine)
+    LOGGER.debug(f'Executing SQL statement: "{statement}"')
+    result_df = pd.read_sql(statement, params=peptides, con=engine)
+    LOGGER.debug(f"OASis hits: {len(result_df)}")
+    return result_df
 
 
 FRACTION_SUBJECTS_THRESHOLDS = np.arange(0, 0.91, 0.01)
