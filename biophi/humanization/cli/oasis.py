@@ -147,7 +147,7 @@ def oasis(
     click.echo("Saving report...", err=True)
     if summary_to_csv:
         sheets = HumannessTaskResult.to_sheets(results, full=False)
-        sheets["Overview"].to_csv(output, index=False)
+        sheets["Overview"].to_csv(output, index=True)
         click.echo(f"Saved CSV report to: {output}", err=True)
         return
     else:
